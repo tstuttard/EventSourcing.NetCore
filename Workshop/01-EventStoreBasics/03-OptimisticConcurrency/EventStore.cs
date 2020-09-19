@@ -1,6 +1,7 @@
 using System;
 using System.Data;
 using Dapper;
+using Newtonsoft.Json;
 using Npgsql;
 
 namespace EventStoreBasics
@@ -28,13 +29,13 @@ namespace EventStoreBasics
             var eventId = Guid.NewGuid();
 
             //2. Serialize event data to JSON
-            string eventData = null; // TODO: Add here @event serialization
+            string eventData = JsonConvert.SerializeObject(@event); // TODO: Add here @event serialization
 
             //3. Send event type
-            string eventType = null; // TODO: Add here getting event type name
+            string eventType = @event.GetType().AssemblyQualifiedName; // TODO: Add here getting event type name
 
             //4. Send stream type
-            string streamType = null; // TODO: Add here getting stream type
+            string streamType = streamId.ToString(); // TODO: Add here getting stream type
 
             return databaseConnection.QuerySingle<bool>(
                 "SELECT append_event(@Id, @Data::jsonb, @Type, @StreamId, @StreamType, @ExpectedVersion)",
@@ -81,7 +82,14 @@ namespace EventStoreBasics
         private void CreateAppendEventFunction()
         {
             const string AppendEventFunctionSQL =
-                @"CREATE OR REPLACE FUNCTION append_event(id uuid, data text, type text, stream_id uuid, stream_type text, expected_stream_version bigint default null) RETURNS boolean
+                @"CREATE OR REPLACE FUNCTION append_event(
+                    id uuid,
+                    data jsonb,
+                    type text,
+                    stream_id uuid,
+                    stream_type text,
+                    expected_stream_version bigint default null
+                ) RETURNS boolean
                 LANGUAGE plpgsql
                 AS $$
                 DECLARE
@@ -89,21 +97,32 @@ namespace EventStoreBasics
                 BEGIN
                     -- 1. get stream version
                     -- TODO
+                    select version
+                    into stream_version
+                    from streams as s
+                    where s.id = stream_id For update;
 
                     -- 2. if stream doesn't exist - create new one with version 0
-                    -- TODO
+                    if stream_version is null then
+                        stream_version := 0;
+
+                        insert into streams (id, type, version) values (stream_id, stream_type, stream_version);
+                    end if;
+
 
                     -- 3. check optimistic concurrency - return false if expected stream version is different than stream version
-                    -- TODO
+                    if stream_version != expected_stream_version then
+                        return false;
+                    end if;
 
                     -- 4. increment stream_version
-                    -- TODO
+                    stream_version := stream_version + 1;
 
                     -- 5. append event to events table
-                    -- TODO
+                    insert into events (id, data, stream_id, type, version, created) values (id, data, stream_id, type, stream_version, now());
 
                     -- 6. update stream version in stream table
-                    -- TODO
+                    update streams as s set version = stream_version where s.id = stream_id;
 
                     RETURN TRUE;
                 END;

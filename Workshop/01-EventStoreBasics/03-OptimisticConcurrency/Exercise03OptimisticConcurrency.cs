@@ -1,4 +1,5 @@
 using System;
+using System.Numerics;
 using Dapper;
 using EventStoreBasics.Tests.Tools;
 using FluentAssertions;
@@ -12,6 +13,11 @@ namespace EventStoreBasics.Tests
         private class User
         {
             public string Name { get; set; }
+        }
+
+        private class Stream
+        {
+            public int Version { get; set; }
         }
 
         private class UserCreated
@@ -67,12 +73,34 @@ namespace EventStoreBasics.Tests
             result.Should().BeTrue();
 
             var wasStreamCreated = databaseConnection.QuerySingle<bool>(
-                "select exists (select 1 from streams where id = @streamId)", new { streamId }
+                "select exists (select 1 from streams where id = @streamId)", new {streamId}
             );
             wasStreamCreated.Should().BeTrue();
 
+            wasEventAppended(streamId);
+
+            var stream = databaseConnection.QueryFirst<Stream>(
+                "select version from streams where id = @streamId", new {streamId}
+            );
+
+            stream.Version.Should().Be(1);
+
+            streamId = Guid.NewGuid();
+
+            eventStore.AppendEvent<UserCreated>(streamId, @event, 0);
+
+            stream = databaseConnection.QuerySingle<Stream>(
+                "select version from streams where id = @streamId", new {streamId}
+            );
+
+            stream.Version.Should().Be(0);
+
+        }
+
+        private void wasEventAppended(Guid streamId)
+        {
             var wasEventAppended = databaseConnection.QuerySingle<bool>(
-                "select exists (select 1 from events where stream_id = @streamId)", new { streamId }
+                "select exists (select 1 from events where stream_id = @streamId)", new {streamId}
             );
             wasEventAppended.Should().BeTrue();
         }
