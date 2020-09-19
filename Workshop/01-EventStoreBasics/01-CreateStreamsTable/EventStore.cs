@@ -1,4 +1,5 @@
 using System;
+using Dapper;
 using Npgsql;
 
 namespace EventStoreBasics
@@ -20,7 +21,14 @@ namespace EventStoreBasics
 
         private void CreateStreamsTable()
         {
-            throw new NotImplementedException("Add here create table sql run with Dapper");
+            const string CreateStreamTablesSql = @"
+CREATE TABLE IF NOT EXISTS streams(
+id UUID NOT NULL PRIMARY KEY ,
+type TEXT NOT NULL,
+version BIGINT NOT NULL
+);";
+            databaseConnection.Execute(CreateStreamTablesSql);
+
         }
 
         public void Dispose()

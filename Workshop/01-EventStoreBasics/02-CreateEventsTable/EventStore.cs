@@ -22,18 +22,30 @@ namespace EventStoreBasics
 
         private void CreateStreamsTable()
         {
-            const string CreatStreamsTableSQL =
+            const string CreateStreamsTableSQL =
                 @"CREATE TABLE IF NOT EXISTS streams(
                       id             UUID                      NOT NULL    PRIMARY KEY,
                       type           TEXT                      NOT NULL,
                       version        BIGINT                    NOT NULL
                   );";
-            databaseConnection.Execute(CreatStreamsTableSQL);
+            databaseConnection.Execute(CreateStreamsTableSQL);
         }
 
         private void CreateEventsTable()
         {
-            throw new NotImplementedException("Add here create table sql run with Dapper");
+            const string CreateEventsTableSql =
+                @"create table if not exists events(
+id UUID not null primary key,
+data jsonb not null,
+stream_id UUID not null,
+type TEXT not null,
+version BIGINT not null,
+created timestamp with time zone not null
+
+);";
+
+            databaseConnection.Execute(CreateEventsTableSql);
+
         }
 
         public void Dispose()
