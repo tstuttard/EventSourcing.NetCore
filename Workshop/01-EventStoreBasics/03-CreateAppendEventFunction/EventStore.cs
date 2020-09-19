@@ -1,6 +1,7 @@
 using System;
 using System.Data;
 using Dapper;
+using Newtonsoft.Json;
 using Npgsql;
 
 namespace EventStoreBasics
@@ -28,13 +29,13 @@ namespace EventStoreBasics
             var eventId = Guid.NewGuid();
 
             //2. Serialize event data to JSON
-            string eventData = null; // TODO: Add here @event serialization
+            string eventData = JsonConvert.SerializeObject(@event); // TODO: Add here @event serialization
 
             //3. Send event type
-            string eventType = null; // TODO: Add here getting event type name
+            string eventType = @event.GetType().ToString(); // TODO: Add here getting event type name
 
             //4. Send stream type
-            string streamType = null; // TODO: Add here getting stream type
+            string streamType = streamId.ToString(); // TODO: Add here getting stream type
 
             return databaseConnection.QuerySingle<bool>(
                 "SELECT append_event(@Id, @Data::jsonb, @Type, @StreamId, @StreamType, @ExpectedVersion)",
@@ -95,9 +96,10 @@ namespace EventStoreBasics
 
                     -- 1. Insert into stream table if there is no stream with provided streamId
                     -- TODO
+                    insert into streams (id, type, version) values (stream_id, stream_type, 0) ON CONFLICT DO NOTHING;
 
                     -- 2. Insert new row into events table with version equal to expected_stream_version + 1
-                    -- TODO
+                    insert into events (id, data, stream_id, type, version) values (id, data, stream_id, type, expected_stream_version + 1);
 
                     -- 3. Update stream version with expected_stream_version + 1
                     -- TODO

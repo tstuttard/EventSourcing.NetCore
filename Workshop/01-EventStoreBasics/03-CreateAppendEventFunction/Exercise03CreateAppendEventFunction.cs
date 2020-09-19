@@ -75,6 +75,8 @@ namespace EventStoreBasics.Tests
                 "select exists (select 1 from events where stream_id = @streamId)", new { streamId }
             );
             wasEventAppended.Should().BeTrue();
+
+            // todo update this test to check versions are correct
         }
     }
 }
