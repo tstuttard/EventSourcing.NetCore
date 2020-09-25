@@ -1,12 +1,33 @@
 using System;
 using System.Collections;
 using System.Data;
+using System.Linq;
 using Dapper;
 using Newtonsoft.Json;
 using Npgsql;
 
 namespace EventStoreBasics
 {
+    public class Event
+    {
+        public Guid Id { get; set; }
+        public string Data { get; set; }
+        public Guid StreamId { get; set; }
+        public string Type { get; set; }
+        public long Version { get; set; }
+        public DateTime Created { get; set; }
+
+        public Event(Guid id, string data, Guid stream_id, string type, long version, DateTime created)
+        {
+            Id = id;
+            Data = data;
+            StreamId = stream_id;
+            Type = type;
+            Version = version;
+            Created = created;
+        }
+    }
+
     public class EventStore: IDisposable, IEventStore
     {
         private readonly NpgsqlConnection databaseConnection;
@@ -45,12 +66,20 @@ namespace EventStoreBasics
 
         public StreamState GetStreamState(Guid streamId)
         {
-            throw new NotImplementedException("Return here stream state, so: id, type and version.");
+            const string GetStreamSql = "select id, type, version from streams where id = :streamId";
+
+            return databaseConnection.Query<dynamic>(GetStreamSql, new {streamId = streamId})
+                .Select(streamData =>
+                    new StreamState(streamData.id, Type.GetType(streamData.type), streamData.version)).SingleOrDefault();
         }
 
         public IEnumerable GetEvents(Guid streamId)
         {
-            throw new NotImplementedException("Return here stream events stored in database.");
+            const string GetEventsSql = "select * from events where stream_id = :StreamId";
+            return databaseConnection
+                .Query<dynamic>(GetEventsSql, new {StreamId = streamId})
+                .Select(@event => JsonConvert.DeserializeObject(@event.data, Type.GetType(@event.type)))
+                .ToList();
         }
 
         private void CreateStreamsTable()
