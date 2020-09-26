@@ -1,8 +1,14 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Data;
 using System.Linq;
+using System.Reflection;
+using Core.Aggregates;
+using Core.Events;
 using Dapper;
+using EventStoreBasics.Tools;
+using FluentAssertions;
 using Newtonsoft.Json;
 using Npgsql;
 
@@ -13,6 +19,7 @@ namespace EventStoreBasics
         private readonly NpgsqlConnection databaseConnection;
 
         private const string Apply = "Apply";
+        private const string Version = "Version";
 
         public EventStore(NpgsqlConnection databaseConnection)
         {
@@ -47,10 +54,19 @@ namespace EventStoreBasics
         public T AggregateStream<T>(Guid streamId)
         {
             // 1. Create instance
+            var aggregate = (T)Activator.CreateInstance(typeof(T), true);
             // 2. Get Stream Events
+            var streamEvents = GetEvents(streamId);
             // 3. For each event call apply method on aggregate and increment aggregate version
-            // 4. Return Aggregate
-            throw new NotImplementedException("Implement aggregation based on the description above");
+            var version = 0;
+            foreach (var streamEvent in streamEvents)
+            {
+                aggregate.InvokeIfExists(Apply, streamEvent);
+                aggregate.SetIfExists(Version, ++version);
+            }
+
+            // 4. Return aggregate
+            return aggregate;
         }
 
         public StreamState GetStreamState(Guid streamId)
@@ -171,6 +187,22 @@ namespace EventStoreBasics
         public void Dispose()
         {
             databaseConnection.Dispose();
+        }
+    }
+
+    public class User: Aggregate
+    {
+        public Guid Id { get; }
+        public int Version { get; }
+
+        public User()
+        {
+        }
+
+        public void add(object @event)
+        {
+            this.Enqueue(@event.As<IEvent>());
+
         }
     }
 }

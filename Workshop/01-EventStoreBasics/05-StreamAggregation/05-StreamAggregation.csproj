@@ -19,6 +19,7 @@
     </ItemGroup>
 
     <ItemGroup>
+        <ProjectReference Include="..\..\02-EventSourcingAdvanced\Core\Core.csproj" />
         <ProjectReference Include="..\Tools\Tools.csproj" />
     </ItemGroup>
 </Project>
