@@ -50,7 +50,7 @@ namespace EventStoreBasics
         {
             var aggregate = (T)Activator.CreateInstance(typeof(T), true);
 
-            var events = GetEvents(streamId);
+            var events = GetEvents(streamId, atStreamVersion, atTimestamp);
             var version = 0;
 
             foreach (var @event in events)
@@ -87,6 +87,8 @@ namespace EventStoreBasics
                 @"SELECT id, data, stream_id, type, version, created
                   FROM events
                   WHERE stream_id = @streamId
+                    and (@atStreamVersion is null or version <= @atStreamVersion)
+                    and (@atTimestamp is null or created <= @atTimestamp)
                   ORDER BY version";
 
             return databaseConnection
