@@ -31,9 +31,22 @@ namespace EventStoreBasics
         public bool Store<TStream>(TStream aggregate) where TStream : IAggregate
         {
             // 1. get events from Aggregate
+            var events = aggregate.DequeueUncommittedEvents();
+
+            var initialVersion = aggregate.Version - events.Count();
+
             // 2. Foreach event append it to store
+            foreach (var @event in events)
+            {
+                var wasSuccessful = AppendEvent<TStream>(aggregate.Id, @event, initialVersion);
+                if (!wasSuccessful)
+                {
+                    return false;
+                }
+            }
+
             // 3. Return true if succeeded
-            throw new NotImplementedException("Implement logic described above;");
+            return true;
         }
 
         public bool AppendEvent<TStream>(Guid streamId, object @event, long? expectedVersion = null)
@@ -137,7 +150,7 @@ namespace EventStoreBasics
         private void CreateAppendEventFunction()
         {
             const string AppendEventFunctionSQL =
-                @"CREATE OR REPLACE FUNCTION append_event(id uuid, data text, type text, stream_id uuid, stream_type text, expected_stream_version bigint default null) RETURNS boolean
+                @"CREATE OR REPLACE FUNCTION append_event(id uuid, data jsonb, type text, stream_id uuid, stream_type text, expected_stream_version bigint default null) RETURNS boolean
                 LANGUAGE plpgsql
                 AS $$
                 DECLARE
