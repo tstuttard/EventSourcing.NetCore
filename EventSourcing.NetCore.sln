@@ -130,6 +130,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EventSourcing.Sample.Web", 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EventSourcing.Sample.IntegrationTests", "Sample\BankAccounts\EventSourcing.Sample.IntegrationTests\EventSourcing.Sample.IntegrationTests.csproj", "{344EFF7D-329C-4A1A-B96D-EF6C9A582CF9}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MentoringPlatform", "MentoringPlatform\MentoringPlatform.csproj", "{6F735334-2E88-484C-A7F7-5BEA92D1AA34}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -304,6 +306,10 @@ Global
 		{344EFF7D-329C-4A1A-B96D-EF6C9A582CF9}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{344EFF7D-329C-4A1A-B96D-EF6C9A582CF9}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{344EFF7D-329C-4A1A-B96D-EF6C9A582CF9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6F735334-2E88-484C-A7F7-5BEA92D1AA34}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6F735334-2E88-484C-A7F7-5BEA92D1AA34}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6F735334-2E88-484C-A7F7-5BEA92D1AA34}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6F735334-2E88-484C-A7F7-5BEA92D1AA34}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
