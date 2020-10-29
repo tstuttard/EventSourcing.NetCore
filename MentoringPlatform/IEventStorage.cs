@@ -299,7 +299,7 @@ namespace MentoringPlatform
             {
                 foreach (var action in actions.OfType<Action<T>>())
                 {
-                    // (action)(@event);
+                    action(@event);
                 }
             }
 
@@ -341,8 +341,13 @@ namespace MentoringPlatform
             void Handle(T @event);
         }
 
-        public static void RegisterHandler(Func<RegisterMentorHandler> func)
+        public static void RegisterHandler<T>(Func<T> factory)
+
         {
+
+            if (handlers == null) handlers = new List<Handler>();
+
+            handlers.Add(new Handler<T>(factory));
 
         }
     }
