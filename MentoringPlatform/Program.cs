@@ -7,15 +7,18 @@ using MentoringPlatform;
 
 namespace MentoringPlatform
 {
+
+
     public class Program
     {
+
         public static void Main(string[] args)
         {
             DomainEvents.RegisterHandler(() => new RegisterMentorHandler());
             DomainEvents.Register((RegisterMentor x) => Console.WriteLine("Action Callback"));
 
 
-            DomainEvents.Raise(new RegisterMentor());
+            DomainEvents.Raise(new RegisterMentor("first", "17-04-1992"));
 
 
             do
@@ -33,9 +36,10 @@ namespace MentoringPlatform
                     continue;
                 }
 
-                if (command.StartsWith("register"))
+                var mentorsRegister = "mentors register";
+                if (command.StartsWith(mentorsRegister))
                 {
-                    var arguments = command.Substring(9).Split(" ");
+                    var arguments = command.Substring(mentorsRegister.Length + 1).Split(" ");
                     if (arguments.Length != 2)
                     {
                         Console.WriteLine("Arguments invalid for register [name] [dateOfBirth]");
@@ -44,7 +48,60 @@ namespace MentoringPlatform
                     var name = arguments[0];
                     var dateOfBirth = arguments[1];
 
-                    DomainEvents.Raise(new RegisterMentor{ name = name, dateOfBirth = dateOfBirth});
+                    DomainEvents.Raise(new RegisterMentor( name, dateOfBirth));
+                }
+
+                if (command.StartsWith("mentors show"))
+                {
+
+                }
+
+                var classCreate = "class create";
+                if (command.StartsWith(classCreate))
+                {
+                    var arguments = command.Substring(classCreate.Length + 1).Split(" ");
+
+                    if (arguments.Length != 2)
+                    {
+                        Console.WriteLine($"Arguments invalid for {classCreate} [name] [totalClassSize]");
+                        continue;
+                    }
+
+                    var className = arguments[0];
+                    var totalClassSize = arguments[1];
+
+                    DomainEvents.Raise(new ClassCreated(className, totalClassSize));
+                }
+
+                var classCancel = "class cancel";
+                if (command.StartsWith(classCancel))
+                {
+                    var arguments = command.Substring(classCreate.Length + 1).Split(" ");
+
+                    if (arguments.Length != 1)
+                    {
+                        Console.WriteLine($"Arguments invalid for {classCancel} [name]");
+                        continue;
+                    }
+
+                    var className = arguments[0];
+
+                    DomainEvents.Raise(new ClassCancelled(className));
+
+                }
+
+                var classShow = "class show";
+                if (command.StartsWith(classShow))
+                {
+                    var arguments = command.Substring(classShow.Length + 1).Split(" ");
+
+                    if (arguments.Length != 1)
+                    {
+                        Console.WriteLine($"Arguments invalid for {classShow} [name]");
+                        continue;
+                    }
+
+                    Console.WriteLine("Show classes");
                 }
 
 
@@ -52,6 +109,29 @@ namespace MentoringPlatform
 
         }
 
+    }
+
+    public class ClassCancelled
+    {
+        public string className { get; }
+
+        public ClassCancelled(string className)
+        {
+            this.className = className;
+        }
+
+    }
+
+    public class ClassCreated
+    {
+        public string className { get; }
+        public string totalClassSize { get; }
+
+        public ClassCreated(string className, string totalClassSize)
+        {
+            this.className = className;
+            this.totalClassSize = totalClassSize;
+        }
     }
 
 
@@ -66,7 +146,13 @@ namespace MentoringPlatform
 
     public class RegisterMentor
     {
-        public string name;
-        public string dateOfBirth;
+        public string name { get; }
+        public string dateOfBirth { get; }
+
+        public RegisterMentor(string name, string dateOfBirth)
+        {
+            this.name = name;
+            this.dateOfBirth = dateOfBirth;
+        }
     }
 }
