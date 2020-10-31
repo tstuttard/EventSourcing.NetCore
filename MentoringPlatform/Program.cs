@@ -20,6 +20,12 @@ namespace MentoringPlatform
 
             DomainEvents.Raise(new RegisterMentor("first", "17-04-1992"));
 
+            var factory = new SessionFactory(new EventStorage());
+
+            var classStateQuery = new ClassStateQuery();
+
+            DomainEvents.RegisterHandler(() => new ClassStateHandler(classStateQuery));
+
 
             do
             {
@@ -72,7 +78,14 @@ namespace MentoringPlatform
 
                     int totalClassSize;
                     int.TryParse(totalClassSizeInput, out totalClassSize);
-                    DomainEvents.Raise(new ClassCreated(className, totalClassSize));
+                    // DomainEvents.Raise(new ClassCreated(className, totalClassSize));
+                    using (var session = factory.OpenSession())
+                    {
+                        var classes = new ClassRepository();
+                        classes.Add(new Class(className, totalClassSize));
+                        session.SubmitChanges();
+                    }
+
                 }
 
                 var classCancel = "class cancel";
@@ -88,13 +101,25 @@ namespace MentoringPlatform
 
                     var className = arguments[0];
 
-                    DomainEvents.Raise(new ClassCancelled(className));
-
+                    // DomainEvents.Raise(new ClassCancelled(className));
+                    using (var session = factory.OpenSession())
+                    {
+                        var classes = new ClassRepository();
+                        var @class = classes[className];
+                        @class.Cancel();
+                        session.SubmitChanges();
+                    }
                 }
 
                 var classShow = "class show";
                 if (command.StartsWith(classShow))
                 {
+                    if (classShow.Length == command.Length)
+                    {
+                        Console.WriteLine($"Please enter a class name to show");
+                    }
+
+
                     var arguments = command.Substring(classShow.Length + 1).Split(" ");
 
                     if (arguments.Length != 1)
@@ -103,9 +128,27 @@ namespace MentoringPlatform
                         continue;
                     }
 
-                    Console.WriteLine("Show classes");
+                    var className = arguments[0];
+
+                    Console.WriteLine("Show class");
+
+                    var classState = classStateQuery.GetClassState(className);
+
+                    var status = classState.isCancelled ? "Cancelled" : "Running";
+                    Console.WriteLine($"Class: {classState.name} Size: {classState.totalClassSize} {status}");
+
                 }
 
+                var classList = "class list";
+                if (command.StartsWith(classList))
+                {
+                    var classes = classStateQuery.GetClassStates();
+                    foreach (var classState in classes)
+                    {
+                        var status = classState.isCancelled ? "Cancelled" : "Running";
+                        Console.WriteLine($"Class: {classState.name} Size: {classState.totalClassSize} {status}");
+                    }
+                }
 
             } while (true);
 
@@ -227,14 +270,11 @@ namespace MentoringPlatform
             totalClassSize = @event.totalClassSize;
         }
 
-        public void Cancel(string name)
+        public void Cancel()
         {
-            if (name == null)
-            {
-                throw new InvalidOperationException($"The class with name: {name} has not been created");
-            }
 
-            var @event = new ClassCancelled(name);
+
+            var @event = new ClassCancelled(Id);
             Apply(@event);
             Append(@event);
         }
