@@ -68,8 +68,10 @@ namespace MentoringPlatform
                     }
 
                     var className = arguments[0];
-                    var totalClassSize = arguments[1];
+                    var totalClassSizeInput = arguments[1];
 
+                    int totalClassSize;
+                    int.TryParse(totalClassSizeInput, out totalClassSize);
                     DomainEvents.Raise(new ClassCreated(className, totalClassSize));
                 }
 
@@ -111,6 +113,54 @@ namespace MentoringPlatform
 
     }
 
+    public class Class: AggregateRoot<string>
+    {
+        private int totalClassSize;
+        public override string Id { get; }
+
+        public Class(string name, IEnumerable<object> events)
+        {
+            Id = name;
+            foreach (dynamic @event in events)
+            {
+                Apply(@event);
+            }
+        }
+
+        public Class(string name, int totalClassSize)
+        {
+            Id = name;
+
+            var @event = new ClassCreated(name, totalClassSize);
+            Apply(@event);
+            Append(@event);
+
+        }
+
+        private void Apply(ClassCreated @event)
+        {
+            totalClassSize = @event.totalClassSize;
+        }
+
+        public void Cancel(string name)
+        {
+            if (name == null)
+            {
+                throw new InvalidOperationException($"The class with name: {name} has not been created");
+            }
+
+            var @event = new ClassCancelled(name);
+            Apply(@event);
+            Append(@event);
+        }
+
+        private void Apply(ClassCancelled @event)
+        {
+            isCancelled = true;
+        }
+        public bool isCancelled { get; set; }
+    }
+
     public class ClassCancelled
     {
         public string className { get; }
@@ -125,9 +175,9 @@ namespace MentoringPlatform
     public class ClassCreated
     {
         public string className { get; }
-        public string totalClassSize { get; }
+        public int totalClassSize { get; }
 
-        public ClassCreated(string className, string totalClassSize)
+        public ClassCreated(string className, int totalClassSize)
         {
             this.className = className;
             this.totalClassSize = totalClassSize;
