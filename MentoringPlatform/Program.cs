@@ -113,6 +113,91 @@ namespace MentoringPlatform
 
     }
 
+    public interface IClassRepository
+    {
+        void Add(Class @class);
+        Class this[string className] { get; }
+    }
+
+    internal class ClassRepository: Repository<string, Class>, IClassRepository
+    {
+        protected override Class CreateInstance(string id, IEnumerable<object> events)
+        {
+            return new Class(id, events);
+        }
+    }
+
+    public class ClassState
+    {
+        public string name { get; set; }
+        public int totalClassSize { get; set; }
+        public bool isCancelled { get; set; }
+    }
+
+    public interface IClassStateQuery
+    {
+        IEnumerable<ClassState> GetClassStates();
+        ClassState GetClassState(string className);
+
+        IEnumerable<ClassState> GetCancelledClasses();
+
+        void AddClassState(string className, int totalClassSize, bool isCancelled);
+        void SetCancelled(string className, bool isCancelled);
+    }
+
+    class ClassStateQuery: IClassStateQuery
+    {
+        private readonly Dictionary<string, ClassState> states = new Dictionary<string, ClassState>();
+
+        public IEnumerable<ClassState> GetClassStates()
+        {
+            return states.Values;
+        }
+
+        public ClassState GetClassState(string className)
+        {
+            return states[className];
+        }
+
+        public IEnumerable<ClassState> GetCancelledClasses()
+        {
+            return states.Values.Where(@class => @class.isCancelled);
+        }
+
+        public void AddClassState(string className, int totalClassSize, bool isCancelled)
+        {
+            var state = new ClassState { name = className,totalClassSize = totalClassSize, isCancelled = isCancelled};
+            states.Add(className, state);
+        }
+
+        public void SetCancelled(string className, bool isCancelled)
+        {
+            states[className].isCancelled = isCancelled;
+        }
+    }
+
+    class ClassStateHandler : DomainEvents.Handles<ClassCreated>, DomainEvents.Handles<ClassCancelled>
+    {
+        private readonly IClassStateQuery classStateQuery;
+
+        public ClassStateHandler(IClassStateQuery classStateQuery)
+        {
+            this.classStateQuery = classStateQuery;
+        }
+
+        public void Handle(ClassCreated @event)
+        {
+            Console.WriteLine($"Class was created with name: {@event.className} and size: {@event.totalClassSize}");
+            classStateQuery.AddClassState(@event.className, @event.totalClassSize, false);
+        }
+
+        public void Handle(ClassCancelled @event)
+        {
+            Console.WriteLine($"Class: {@event.className} was cancelled");
+            classStateQuery.SetCancelled(@event.className, true);
+        }
+    }
+
     public class Class: AggregateRoot<string>
     {
         private int totalClassSize;
